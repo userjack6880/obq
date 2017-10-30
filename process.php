@@ -14,16 +14,16 @@ $site = $_GET["site"];
 if ($site == 'pbia' || $site == 'all') {
 	# get full list of instructors
 	$doc = hQuery::fromUrl('http://playbetterbilliards.com/instructors?state=&country=&active=1',['Accept' => 'txt/html,application/xhtml+xml;q=0.9,*/*;q=0.8']);
-	echo "loading site\n";
+	echo 'loading site<br>';
 
 #	$links = array();
 
 	$entries = $doc->find('tr');
 
 	if ($entries) {
-	echo "entries found\n";
-		foreach($entries as $pos -> $tr) {
-			echo "printing entry\n";
+	echo 'entries found<br>';
+		foreach($entries) {
+			echo 'printing entry<br>';
 #			echo $tr->attr{'onclick');
 		}
 	}
