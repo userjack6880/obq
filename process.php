@@ -3,11 +3,11 @@
  * Process HTML
  */
 # Preload Stuff
-#include_once 'lib/hquery.php';
-#	use duzun\hQuery;
-#	hQuery::$cache_path = "cache";
+include_once 'lib/hquery.php';
+	use duzun\hQuery;
+	hQuery::$cache_path = "cache";
 
-#$site = $_GET["site"];
+$site = $_GET["site"];
 
 echo '\o/';
 
