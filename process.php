@@ -3,6 +3,7 @@
  * Process HTML
  */
 # Preload Stuff
+include_once 'config.php';
 include_once 'lib/hquery.php';
 	use duzun\hQuery;
 	hQuery::$cache_path = "cache";
