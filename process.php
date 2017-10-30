@@ -38,8 +38,8 @@ if ($site == 'pbia' || $site == 'all') {
 
 	if ($entries) {
 		foreach($entries as $pos => $tr) {
-			$first[$pos] = $tr->find('td')[1];
-			$last[$pos]  = $tr->find('td')[2];
+			$first[$pos] = mysql_real_escape_string($tr->find('td')[1]);
+			$last[$pos]  = mysql_real_escape_string($tr->find('td')[2]);
 
 			$link = $tr->attr('onclick');
 			$link = str_replace("location.href='", "", $link);
@@ -78,6 +78,9 @@ if ($site == 'pbia' || $site == 'all') {
 					$data  = str_replace("&#x2611; ", "", $data);
 					$title = str_replace(":", "", $title);
 
+					# sanitize data
+					$data = mysql_real_escape_string($data);
+
 					if ($title == "Membership")     $sql .= $data."', '";
 					if ($title == "E-Mail Address") $sql .= $data."', '";
 					if ($title == "City")           $sql .= $data."', '";
@@ -112,6 +115,7 @@ if ($site == 'pbia' || $site == 'all') {
 				}
 			}
 		$sql .= "ON DUPLICATE KEY UPDATE first=VALUES(first), last=VALUES(last), membership=VALUES(membership), email=VALUES(email), city=VALUES(city), state=VALUES(state), zip=VALUES(zip), country=VALUES(country), phone=VALUES(phone), mobile=VALUES(mobile), verified=VALUES(verified), active=VALUES(active);";
+#		echo $sql."<br>";
 		$result = mysql_query($sql);
 		if (!$result) {
 			die("Invalid query: ".mysql_error());
@@ -126,5 +130,12 @@ if ($site == 'pbia' || $site == 'all') {
 # Functions
 
 mysql_close($mysql);
+
+?>
+
+<a href="index.php">Back</a>
+
+<?php
+
 echo '\o/';
 ?>
