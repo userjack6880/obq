@@ -7,7 +7,7 @@
 #	use duzun\hQuery;
 #	hQuery::$cache_path = "cache";
 
-$site = $_GET["site"];
+#$site = $_GET["site"];
 
 echo '\o/';
 
@@ -16,7 +16,7 @@ echo '\o/';
 #if ($site == 'pbia' || $site == 'all') {
 	# get full list of instructors
 #	$doc = hQuery::fromUrl('http://playbetterbilliards.com/instructors?state=&country=&active=1',
-	                       ['Accept' => 'txt/html,application/xhtml+xml;q=0.9,*/*;q=0.8']);
+#	                       ['Accept' => 'txt/html,application/xhtml+xml;q=0.9,*/*;q=0.8']);
 
 #	$links = array();
 
