@@ -21,10 +21,10 @@ if ($site == 'pbia' || $site == 'all') {
 	$entries = $doc->find('tr');
 
 	if ($entries) {
-		echo 'entry';
-		foreach($entries as $pos -> $tr) {
-		echo $tr->attr{'onclick');
-		}
+	echo 'entries found';
+#		foreach($entries as $pos -> $tr) {
+#			echo $tr->attr{'onclick');
+#		}
 	}
 	# pull up each instructor's page and pull the data
 	# output
