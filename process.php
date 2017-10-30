@@ -10,6 +10,19 @@ include_once 'lib/hquery.php';
 
 $site = $_GET["site"];
 
+# Open MySQL Connection
+$mysql = mysql_connect('localhost', DB_USER, DB_PASSWORD);
+if (!$mysql) {
+	die("Could not connect: ".mysql_error());
+}
+
+$db_selected = mysql_select_db(DB_NAME, $mysql);
+if (!$db_selected) {
+	die("Can't use DB: ".mysql_error());
+}
+
+echo "DB \o/<br>";
+
 # Site Specific Stuff
 # pbia
 if ($site == 'pbia' || $site == 'all') {
@@ -39,15 +52,16 @@ if ($site == 'pbia' || $site == 'all') {
 	$temp = 1;
 	foreach($links as $pos => $link) {
 		if ($link) {
+			$sql = "INSERT INTO `obq_instructors` (`id`, `first`, `last`, `membership`, `email`, `city`, `state`, `zip`, `country`, `phone`, `mobile`, `website`, `verified`, `active`) VALUES ('";
 			preg_match('/\d+/', $link, $id);
-			echo "id: ".$id[0]."<br>";			
+			$sql .= $id[0]."', '";			
 
 			$doc = hQuery::fromUrl($link,['Accept' => 'txt/html,application/xhtml+xml;q=0.9,*/*;q=0.8']);
 
 			$instructor = $doc->find('h2');
 
-			echo "first: ".$first[$pos]."<br>";
-			echo "last: ".$last[$pos]."<br>";
+			$sql .= $first[$pos]."', '";
+			$sql .= $last[$pos]."', '";
 
 			$metadata = $doc->find('tr');
 
@@ -56,47 +70,54 @@ if ($site == 'pbia' || $site == 'all') {
 					$title = $meta->find('th')[0];
 					$data  = $meta->find('td')[0];
 
+					# make sure the data is text-only
+					$data = trim($data->text());
+
 					# clean up the silly checkboxes they used
 					$data  = str_replace("&#x2610; ", "", $data);
 					$data  = str_replace("&#x2611; ", "", $data);
 					$title = str_replace(":", "", $title);
 
-					if ($title == "Membership")     echo "membership: ".$data."<br>";
-					if ($title == "E-Mail Address") echo "email: ".$data."<br>";
-					if ($title == "City")           echo "city: ".$data."<br>";
-					if ($title == "State")          echo "state: ".$data."<br>";
-					if ($title == "Postal Code")    echo "zip: ".$data."<br>";
-					if ($title == "Country")        echo "country: ".$data."<br>";
+					if ($title == "Membership")     $sql .= $data."', '";
+					if ($title == "E-Mail Address") $sql .= $data."', '";
+					if ($title == "City")           $sql .= $data."', '";
+					if ($title == "State")          $sql .= $data."', '";
+					if ($title == "Postal Code")    $sql .= $data."', '";
+					if ($title == "Country")        $sql .= $data."', '";
 					if ($title == "Area Code") {
 						$phone = $data;
 					}
 					if ($title == "Phone") {
 						$phone .= str_replace("-", "", $data);
-						echo "phone: ".$phone."<br>";
+						$sql .= $phone."', '";
 					}
 					if ($title == "Mobile Area Code") {
 						$mobile = $data;
 					}
 					if ($title == "Mobile") {
-						$phone .= str_replace("-", "", $data);
-						echo "mobile: ".$mobile."<br>";
+						$mobile .= str_replace("-", "", $data);
+						$sql .= $mobile."', '";
 					}
-					if ($title == "Personal Web site") echo "website: ".$data."<br>";
+					if ($title == "Personal Web site") $sql .= $data."', '";
 					if ($title == "Background Verified") {
 						$verified = 0;
 						if ($data == "Yes") $verified = 1;
-						echo "verified: ".$verified."<br>";
+						$sql .= $verified."', '";
 					}
 					if ($title == "Active") {
 						$active = 0;
 						if ($data == "Yes") $active = 1;
-						echo "active: ".$active."<br>";
+						$sql .= $active."')";
 					}
 				}
 			}
-#		$temp++;
+		$sql .= "ON DUPLICATE KEY UPDATE first=VALUES(first), last=VALUES(last), membership=VALUES(membership), email=VALUES(email), city=VALUES(city), state=VALUES(state), zip=VALUES(zip), country=VALUES(country), phone=VALUES(phone), mobile=VALUES(mobile), verified=VALUES(verified), active=VALUES(active);";
+		$result = mysql_query($sql);
+		if (!$result) {
+			die("Invalid query: ".mysql_error());
 		}
 		$sum++;
+		}
 	}
 	# output
 	echo $sum." instructors<br>";
@@ -104,5 +125,6 @@ if ($site == 'pbia' || $site == 'all') {
 
 # Functions
 
+mysql_close($mysql);
 echo '\o/';
 ?>
