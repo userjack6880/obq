@@ -52,9 +52,9 @@ if ($sort) {
 
 # get the offset
 if ($offset) {
-	$sql .= " LIMIT 10 OFFSET $offset";
+	$sql .= " LIMIT 20 OFFSET $offset";
 } else {
-	$sql .= " LIMIT 10";
+	$sql .= " LIMIT 20";
 	$offset = 0;
 }
 
@@ -71,23 +71,53 @@ $offs = 0;
 $cnt2 = $count;
 while ($cnt2 > 0) {
 	# if current page
-	if ($curr*10 == $offset+10) {
+	if ($curr*20 == $offset+20) {
 		echo "$curr ";
 	} else {
 		?><a href="instructors.php?sort=<?php echo $sort; ?>&offset=<?php echo $offs; ?>"><?php echo $curr; ?></a> <?php
 	}
 	$curr++;
-	$offs = $offs+10;
-	$cnt2 = $cnt2-10;
+	$offs = $offs+20;
+	$cnt2 = $cnt2-20;
 }
 echo "<br>";
 
 # print results
+?>
+<table>
+	<tr>
+		<td>First</td>
+		<td>Last</td>
+		<td>Membership</td>
+		<td>Email</td>
+		<td>City</td>
+		<td>State</td>
+		<td>ZIP</td>
+		<td>Country</td>
+		<td>Phone</td>
+		<td>Mobile</td>
+		<td>Website</td>
+		<td>Verified</td>
+		<td>Active</td>
+	</tr>
+<?php
+
 while ($row = mysql_fetch_assoc($result)) {
+	echo '<tr>';
 	foreach($row as $field => $value) {
-		echo "$field: $value<br>";
+		if ($field == 'id') continue;
+		echo '<td>';
+		if ($field == 'verified' || $field == 'active') {
+			if ($value == 0) { echo "yes"; } else { echo "no"; }
+		} else {
+			echo $value;
+		}
+		echo '</td>';
 	}
+	echo '</tr>';
 }
+
+echo '</table>';
 
 # print pagination
 
@@ -97,14 +127,14 @@ $offs = 0;
 $cnt2 = $count;
 while ($cnt2 > 0) {
 	# if current page
-	if ($curr*10 == $offset+10) {
+	if ($curr*20 == $offset+20) {
 		echo "$curr ";
 	} else {
 		?><a href="instructors.php?sort=<?php echo $sort; ?>&offset=<?php echo $offs; ?>"><?php echo $curr; ?></a> <?php
 	}
 	$curr++;
-	$offs = $offs+10;
-	$cnt2 = $cnt2-10;
+	$offs = $offs+20;
+	$cnt2 = $cnt2-20;
 }
 echo "<br>";
 
