@@ -48,20 +48,26 @@ if ($site == 'pbia' || $site == 'all') {
 		}
 	}
 
+	# clear the table for new data
+
+	$result = mysql_query("TRUNCATE TABLE `obq_instructors`");
+	if (!$result) {
+		die("Invalid query: ".mysql_error());
+	}
+
 	# pull up each instructor's page and pull the data
-	$temp = 1;
 	foreach($links as $pos => $link) {
 		if ($link) {
-			$sql = "INSERT INTO `obq_instructors` (`id`, `first`, `last`, `membership`, `email`, `city`, `state`, `zip`, `country`, `phone`, `mobile`, `website`, `verified`, `active`) VALUES ('";
 			preg_match('/\d+/', $link, $id);
-			$sql .= $id[0]."', '";			
+			$ins_field = "`id`";
+			$ins_data  = "'$id[0]'";			
 
 			$doc = hQuery::fromUrl($link,['Accept' => 'txt/html,application/xhtml+xml;q=0.9,*/*;q=0.8']);
 
 			$instructor = $doc->find('h2');
 
-			$sql .= $first[$pos]."', '";
-			$sql .= $last[$pos]."', '";
+			$ins_field .= ",`first`,`last`";
+			$ins_data  .= ",'$first[$pos]','$last[$pos]'";
 
 			$metadata = $doc->find('tr');
 
@@ -81,41 +87,65 @@ if ($site == 'pbia' || $site == 'all') {
 					# sanitize data
 					$data = mysql_real_escape_string($data);
 
-					if ($title == "Membership")     $sql .= $data."', '";
-					if ($title == "E-Mail Address") $sql .= $data."', '";
-					if ($title == "City")           $sql .= $data."', '";
-					if ($title == "State")          $sql .= $data."', '";
-					if ($title == "Postal Code")    $sql .= $data."', '";
-					if ($title == "Country")        $sql .= $data."', '";
+					if ($title == "Membership") {
+						$ins_field .= ",`membership`";
+						$ins_data  .= ",'$data'";
+					}
+					if ($title == "E-Mail Address") {
+						$ins_field .= ",`email`";
+						$ins_data  .= ",'$data'";
+					}
+					if ($title == "City") {
+						$ins_field .= ",`city`";
+						$ins_data  .= ",'$data'";
+					}
+					if ($title == "State") {
+						$ins_field .= ",`state`";
+						$ins_data  .= ",'$data'";
+					}
+					if ($title == "Postal Code") {
+						$ins_field .= ",`zip`";
+						$ins_data  .= ",'$data'";
+					}
+					if ($title == "Country") {
+						$ins_field .= ",`country`";
+						$ins_data  .= ",'$data'";
+					}
 					if ($title == "Area Code") {
 						$phone = $data;
 					}
 					if ($title == "Phone") {
 						$phone .= str_replace("-", "", $data);
-						$sql .= $phone."', '";
+						$ins_field .= ",`phone`";
+						$ins_data  .= ",'$phone'";
 					}
 					if ($title == "Mobile Area Code") {
 						$mobile = $data;
 					}
 					if ($title == "Mobile") {
 						$mobile .= str_replace("-", "", $data);
-						$sql .= $mobile."', '";
+						$ins_field .= ",`mobile`";
+						$ins_data  .= ",'$mobile'";
 					}
-					if ($title == "Personal Web site") $sql .= $data."', '";
+					if ($title == "Personal Web site") {
+						$ins_field .= ",`website`";
+						$ins_data  .= ",'$data'";
+					}
 					if ($title == "Background Verified") {
+						$ins_field .= ",`verified`";
 						$verified = 0;
 						if ($data == "Yes") $verified = 1;
-						$sql .= $verified."', '";
+						$ins_data  .= ",'$verified'";
 					}
 					if ($title == "Active") {
+						$ins_field .= ",`active`";
 						$active = 0;
 						if ($data == "Yes") $active = 1;
-						$sql .= $active."')";
+						$ins_data  .= ",'$active'";
 					}
 				}
 			}
-		$sql .= "ON DUPLICATE KEY UPDATE first=VALUES(first), last=VALUES(last), membership=VALUES(membership), email=VALUES(email), city=VALUES(city), state=VALUES(state), zip=VALUES(zip), country=VALUES(country), phone=VALUES(phone), mobile=VALUES(mobile), verified=VALUES(verified), active=VALUES(active);";
-#		echo $sql."<br>";
+		$sql = "INSERT INTO `obq_instructors` ($ins_field) VALUES ($ins_data)";
 		$result = mysql_query($sql);
 		if (!$result) {
 			die("Invalid query: ".mysql_error());
@@ -127,7 +157,132 @@ if ($site == 'pbia' || $site == 'all') {
 	echo $sum." instructors<br>";
 }
 
-# Functions
+# McDermott and Viking use the same system to locate their dealers, 
+# so most of this code will be shared between the two. It'll be a 
+# function and will be run according to the vendor they're using.
+
+if ($site == 'mcd' || $site == 'all') ult_loc('mcd');
+if ($site == 'viking' || $site == 'all') ult_loc('viking');
+
+function ult_loc($loc) {
+	echo "<h1>$loc</h1>";
+	if ($loc == 'mcd') {
+		$url = 'http://www.mcdermottcue.com/locator/results_list.php?pageno=';
+		$result = mysql_query("DELETE FROM `obq_vendors` WHERE `vendor` LIKE 'McDermott'");
+		if (!$result) {
+			die ("Invalid Query: ".mysql_error());
+		}
+	} else {
+		$url = 'http://shop.vikingcue.com/locator/results_list.php?pageno=';
+		$result = mysql_query("DELETE FROM `obq_vendors` WHERE `vendor` LIKE 'Viking'");
+		if (!$result) {
+			die ("Invalid Query: ".mysql_error());
+		}
+	}
+	$pageno = 1;
+
+	# get the number of pages involved and start the itteration
+	$doc = hQuery::fromUrl($url.$pageno,['Accept' => 'txt/html,application/xhtml+xml;q=0.9,*/*;q=0.8']);
+
+	$pagetot = $doc->find('div.pagination');
+
+	preg_match('/\(\d+\)/', $pagetot, $pagetot);
+	$pagetot = str_replace(array('(',')'), "", $pagetot);
+
+	$sum = 0;
+
+	# now run through each page
+	while ($pageno <= $pagetot[0]) {
+		$doc = hQuery::fromUrl($url.$pageno,['Accept' => 'txt/html,application/xhtml+xml;q=0.9,*/*;q=0.8']);
+
+		# get links for each page, then open them up, load the data, and save it... it's not the best, but there's not a much better way
+		$links = $doc->find('span > a');
+
+		if ($links) {
+			foreach ($links as $pos => $link) {
+				$url2 = $link->attr('href');
+
+				$doc = hQuery::fromUrl($url2,['Accept' => 'txt/html,application/xhtml+xml;q=0.9,*/*;q=0.8']);
+
+				if (!$doc) continue;	# sometimes we get a page that just won't load...
+
+				$name = strtoupper(trim($link->text()));
+				$ins_field = "`name`";
+				$ins_data  = "'".mysql_real_escape_string($name)."'";
+
+				if ($loc == 'mcd') {
+					$ins_field .= ",`vendor`";
+					$ins_data  .= ",'McDermott'";
+				}
+				if ($loc == 'viking') {
+					$ins_field .= ",`vendor`";
+					$ins_data  .= ",'Viking'";
+				}
+
+				$phone = $doc->find('li','id=phone');
+				if ($phone) {
+					$phone = str_replace(array('(',')','-',' '), "", $phone);
+					$ins_field .= ",`phone`";
+					$ins_data  .= ",'$phone'";
+				}
+
+				$fax = $doc->find('li','id=fax');
+				if ($fax) {
+					$fax = str_replace(array('(',')','-',' '), "", $fax);
+					$ins_field .= ",`fax`";
+					$ins_data  .= ",'$fax'";
+				}
+			
+				$website = $doc->find('li','id=website');
+				if ($website) {
+					$link = $website->find('a');
+					if ($loc == 'mcd') $website = $website->text();
+					if ($loc == 'viking') $website = $link->attr('href');
+					$ins_field .= ",`website`";
+					$ins_data  .= ",'".mysql_real_escape_string($website)."'";	
+				}
+
+				$email = $doc->find('li','id=email');
+				if ($email && $loc != 'viking') {
+					$email = $email->text();
+					$ins_field .= ",`email`";
+					$ins_data  .= ",'".mysql_real_escape_string($email)."'";
+				}
+
+				$address = $doc->find('span.resultInfo');
+				if ($address) {
+					$i = 1;
+					foreach ($address as $line) {
+						$ins_field .= ",`addr$i`";
+						$ins_data  .= ",'".mysql_real_escape_string($line)."'";
+						$i++;
+					}
+
+					$last = count($address);
+					preg_match('/([^,]+),\s([A-Z]{2}.)\s(\d+)/', $address[$last-1], $address2);
+
+					$ins_field .= ",`city`,`state`,`zip`";
+					$ins_data  .= ",'".mysql_real_escape_string($address2[1])."','".str_replace('.','',$address2[2])."','$address2[3]'";
+				}
+				
+				$sql = "INSERT INTO `obq_vendors` ($ins_field) VALUES ($ins_data)";
+				
+				$result = mysql_query($sql);
+				if (!$result) {
+					die ("Invalid Query: ".mysql_error());
+				}
+
+				$sum++;
+			}
+		}
+
+		$pageno++;
+	}
+
+	echo $sum." entries<br>";
+
+	# take the data collected shove it into the database
+}
 
 mysql_close($mysql);
 
