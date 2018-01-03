@@ -29,7 +29,7 @@ echo '<a href="dealers.php"><h1>Dealers</h1></a>';
 
 # select all the data from the database...
 
-$sql = "SELECT * FROM `obq_vendors`";
+$sql = "SELECT * FROM `obq_dealers`";
 
 # if searches are done, add appropriate lines
 
@@ -116,7 +116,7 @@ if ($s_dealer) echo "&dealer=$s_dealer";
 if ($s_city) echo "&city=$s_city";
 if ($s_state) echo "&state=$s_state";
 if ($s_zip) echo "&zip=$s_zip";
-if ($s_vendor) echo "&vendor=$s_vendor";
+#if ($s_vendor) echo "&vendor=$s_vendor";
 ?>"><?php echo $curr; ?></a> <?php
 	}
 	$curr++;
@@ -133,7 +133,7 @@ if ($s_dealer) echo "&dealer=$s_dealer";
 if ($s_city) echo "&city=$s_city";
 if ($s_state) echo "&state=$s_state";
 if ($s_zip) echo "&zip=$s_zip";
-if ($s_vendor) echo "&vendor=$s_vendor";
+#if ($s_vendor) echo "&vendor=$s_vendor";
 ?>">Show All Fields</a>
 <br>
 <br>
@@ -193,7 +193,7 @@ if ($s_dealer) echo "&dealer=$s_dealer";
 if ($s_city) echo "&city=$s_city";
 if ($s_state) echo "&state=$s_state";
 if ($s_zip) echo "&zip=$s_zip";
-if ($s_vendor) echo "&vendor=$s_vendor";
+#if ($s_vendor) echo "&vendor=$s_vendor";
 ?>"><?php echo $curr; ?></a> <?php
 	}
 	$curr++;
