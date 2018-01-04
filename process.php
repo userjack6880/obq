@@ -11,24 +11,20 @@ include_once 'lib/hquery.php';
 if (isset($argv[1])) { $site = $argv[1]; }
 else { $site = $_GET["site"]; }
 
-global $debug;
-if (isset($argv[2])) { $debug = $argv[2]; }
-elseif (isset($_GET["debug"])) { $debug = $_GET["debug"]; }
-else { $debug = 0; }
-
 # Open MySQL Connection
 $mysql = new mysqli('localhost', DB_USER, DB_PASSWORD, DB_NAME);
 if (mysqli_connect_errno()) {
 	die("Could not connect: ".mysqli_connect_error());
 }
 
-echo "DB \o/<br>";
+echo "DB \\o/\n\n";
 
 # Site Specific Stuff
 # pbia
 if ($site == 'pbia' || $site == 'all') {
 	$sum = 0;
-	echo "<h1>Instructors</h1>\n";
+	echo "PBIA\n\n";
+
 	# get full list of instructors
 	$doc = hQuery::fromUrl('http://playbetterbilliards.com/instructors?state=&country=&active=1',['Accept' => 'txt/html,application/xhtml+xml;q=0.9,*/*;q=0.8']);
 
@@ -158,21 +154,19 @@ if ($site == 'pbia' || $site == 'all') {
 			}
 
 			$sum++;
-			if ($debug) { 
-				echo "$sum done\r"; 
-			}
+			echo "\r$sum Done."; 
 		}
 	}
-	# output
-	if ($debug) { echo "\n"; }
-	echo "$sum instructors<br>\n";
 }
 
 # Meucci Cues uses a javascript-based map... fortunately, we can just get data directly from them.
 
 if ($site == 'meucci' || $site == 'all') {
+	echo "\nMeucci\n";
 	# pull in data from meucci's js file
 	$file = file_get_contents('http://meuccicues.com/map/map-config.js');
+
+	$sum = 0;
 
 	preg_match_all('/\'data\'\:\'(.+)\'/', $file, $lines);
 
@@ -184,8 +178,10 @@ if ($site == 'meucci' || $site == 'all') {
 			# now process the line, and pull out some data...
 			$data = explode("<br>", $line);
 
-			$phone = '';
+			$setph = 0;
+			$setad = 0;
 			$city = '';
+			$addr = '';
 			$state = '';
 			$zip = '';
 			$name = '';
@@ -196,13 +192,14 @@ if ($site == 'meucci' || $site == 'all') {
 
 			# now that the data is in an array, let's go through each line of the array...
 			foreach ($data as $data_line) {
-				echo "$data_line\n";
 				# phone
-				if(preg_match('/\d{3}\-\d{3}\-\d{4}/', $data_line, $phone)) {
+				if(preg_match('/\d{3}\-\d{3}\-\d{4}/', $data_line, $phone) && $setph == 0) {
 					$ins_field  .= ",`phone`";
 					$ins_data   .= ",'".str_replace("-", "", $phone[0])."'";
 					$ins_update .= ",`phone`='".str_replace("-", "", $phone[0])."'";
+					$setph = 1;
 				}
+
 				# city, state, zip
 				elseif (preg_match('/^([^,]+),\s([A-Z]{2})\s(\d+)/', $data_line, $matches)) {
 					$city  = $mysql->real_escape_string($matches[1]);
@@ -212,30 +209,47 @@ if ($site == 'meucci' || $site == 'all') {
 					$ins_data   .= ",'$city','$state','$zip'";
 					$ins_update .= ",`city`='$city',`state`='$state',`zip`='$zip'";
 				}
+
 				# dealer name
 				elseif (preg_match('/^[A-Z. ]+/', $data_line, $dealer)) {
 					$name = $mysql->real_escape_string($dealer[0]);
-					echo "$name\n";
 					$ins_field  = "`name`";
 					$ins_data   = "'$name'";
 					$ins_update = "`name`='$name'";
+					if (strlen($name) > 1) {
+						$insert = 0;
+					} else {
+						$insert = 1;
+					}
 				}
+
+				# street address - Meucci is bad at data entry, this may make weird data if they share dealers
+				elseif (isset($name) && $insert == 0 && $setad == 0 && !empty($data_line)) {
+					$addr = $mysql->real_escape_string($data_line);
+					$ins_field  .= ",`addr1`";
+					$ins_data   .= ",'$addr'";
+					$ins_update .= ",`addr1`='$addr'";
+					$setad = 1;
+				}
+
 				# if a blank line, put data into data base
 				elseif (empty($data_line)) {
 					# for the foreign locations, the dealer name gets mangled... we can easily filter
 					if (isset($city) && isset($state) && isset($zip) && $insert == 0) {
-						dealer_insert($name,$ins_field,$ins_data,$ins_update,$mysql);
+						dealer_insert($name,"meucci",$ins_field,$ins_data,$ins_update,$mysql);
 						$city = '';
 						$state = '';
 						$zip = '';
 						$insert = 1;
+						$setph = 0;
+						$setad = 0;
 					}
 				}
 			}
 
 			# we can assume the last item in the array was extracted, shove it into the database too
-			if (isset($city) && isset($state) && isset($zip)) {
-				dealer_insert($name,$ins_field,$ins_data,$ins_update,$mysql);
+			if (isset($city) && isset($state) && isset($zip) && $insert == 0) {
+				dealer_insert($name,"meucci",$ins_field,$ins_data,$ins_update,$mysql);
 				$city = '';
 				$state = '';
 				$zip = '';
@@ -252,8 +266,7 @@ if ($site == 'mcd' || $site == 'all') ult_loc('mcd',$mysql);
 if ($site == 'viking' || $site == 'all') ult_loc('viking',$mysql);
 
 function ult_loc($loc,$mysql) {
-	global $debug;
-	echo "<h1>$loc</h1>\n";
+	echo "\n$loc\n";
 	if ($loc == 'mcd') { $url = 'http://www.mcdermottcue.com/locator/results_list.php?pageno='; }
 	else { $url = 'http://shop.vikingcue.com/locator/results_list.php?pageno='; }
 	$pageno = 1;
@@ -344,55 +357,67 @@ function ult_loc($loc,$mysql) {
 					$ins_update .= ",`city`='".$mysql->real_escape_string($addr1)."',`state`='".str_replace('.','',$addr2)."',`zip`='$addr3'";
 				}
 
-				dealer_insert($name,$ins_field,$ins_data,$ins_update,$mysql);
+				dealer_insert($name,$loc,$ins_field,$ins_data,$ins_update,$mysql);
 			}
 		}
 
 		$pageno++;
 	}
-
-	if ($debug) { echo "\n"; }
-	echo "$sum entries<br>\n";
-
-	# take the data collected shove it into the database
 }
 
-function dealer_insert($name,$ins_field,$ins_data,$ins_update,$mysql) {
-	global $debug;
+# function to insert data into obq_dealers table
+
+function dealer_insert($name,$vendor,$ins_field,$ins_data,$ins_update,$mysql) {
 	global $sum;
 	
+	# check for existing dealer and count
 	$result = $mysql->query("SELECT * FROM `obq_dealers` WHERE `name`='".$mysql->real_escape_string($name)."'");
-		$count = mysqli_num_rows($result);
-		if ($count > 0) {
-			if ($debug) {
-				echo "Entry Exists, Updating\r";
-			}
-			$sql = "UPDATE `obq_dealers` SET $ins_update WHERE `name`='".$mysql->real_escape_string($name)."'";
-			$sum++;
-		} else {
-			if ($debug) {
-				echo "New Entry\r";
-			}
-			$sql = "INSERT INTO `obq_dealers` ($ins_field) VALUES ($ins_data)";
-			$sum++;
-		}				
+	$count = mysqli_num_rows($result);
+
+	# if one exists, update the dealer's information
+	if ($count > 0) {
+		$sql = "UPDATE `obq_dealers` SET $ins_update WHERE `name`='".$mysql->real_escape_string($name)."'";
+		$sum++;
+
+	# otherwise, put a new entry into it
+	} else {
+		$sql = "INSERT INTO `obq_dealers` ($ins_field) VALUES ($ins_data)";
+		$sum++;
+	}
+
+	vendor_insert($name,$vendor,$mysql);
+
+	$result = $mysql->query($sql);
+	if (!$result) {
+		echo "Query: $sql\n";
+		die ("Invalid Query: ".mysqli_error($mysql));
+	}
+
+	echo "\r$sum Done."; 
+}
+
+# function to insert data into obq_vendors table
+
+function vendor_insert($name,$vendor,$mysql) {
+	global $sum;
+
+	# check for existing dealer/vendor combo and count it	
+	$result = $mysql->query("SELECT * FROM `obq_vendors` WHERE `name`='".$mysql->real_escape_string($name)."' AND `vendor`='$vendor'");
+	$count = mysqli_num_rows($result);
+
+	# if the combo doesn't exist, put one in
+	if ($count == 0) {
+		$sql = "INSERT INTO `obq_vendors` (`name`,`vendor`) VALUES ('".$mysql->real_escape_string($name)."','$vendor')";
+
 		$result = $mysql->query($sql);
 		if (!$result) {
 			echo "Query: $sql\n";
 			die ("Invalid Query: ".mysqli_error($mysql));
 		}
-		if ($debug) { 
-			echo "$sum Done. "; 
-		}
+	}
 }
 
 $mysql->close();
 
-?>
-
-<a href="index.php">Back</a>
-
-<?php
-
-echo '\o/';
+echo "\n\n\\o/";
 ?>
