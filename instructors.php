@@ -5,8 +5,10 @@
 # Preload Stuff
 include_once 'config.php';
 
-$sort = $_GET["sort"];
-$offset = $_GET["offset"];
+$sort = '';
+$offset = 0;
+if (isset($_GET["sort"]))   $sort = $_GET["sort"];
+if (isset($_GET["offset"])) $offset = $_GET["offset"];
 
 # Open MySQL Connection
 $mysql = mysql_connect('localhost', DB_USER, DB_PASSWORD);

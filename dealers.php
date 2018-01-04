@@ -18,12 +18,12 @@ $s_state  = '';
 $s_zip    = '';
 $s_vendor = '';
 
-if (isset($_GET["offset"])) $offset   = mysql_real_escape_string($_GET["offset"]);
-if (isset($_GET["dealer"])) $s_dealer = mysql_real_escape_string($_GET["dealer"]);
-if (isset($_GET["city"]))   $s_city   = mysql_real_escape_string($_GET["city"]);
-if (isset($_GET["state"]))  $s_state  = mysql_real_escape_string($_GET["state"]);
-if (isset($_GET["zip"]))    $s_zip    = mysql_real_escape_string($_GET["zip"]);
-if (isset($_GET["vendor"])) $s_vendor = mysql_real_escape_string($_GET["vendor"]);
+if (isset($_GET["offset"])) $offset   = $mysql->real_escape_string($_GET["offset"]);
+if (isset($_GET["dealer"])) $s_dealer = $mysql->real_escape_string($_GET["dealer"]);
+if (isset($_GET["city"]))   $s_city   = $mysql->real_escape_string($_GET["city"]);
+if (isset($_GET["state"]))  $s_state  = $mysql->real_escape_string($_GET["state"]);
+if (isset($_GET["zip"]))    $s_zip    = $mysql->real_escape_string($_GET["zip"]);
+if (isset($_GET["vendor"])) $s_vendor = $mysql->real_escape_string($_GET["vendor"]);
 
 echo "<a href=\"dealers.php\"><h1>Dealers</h1></a>\n";
 
@@ -55,11 +55,11 @@ if ($s_dealer || $s_city || $s_state || $s_zip || $s_vendor) {
 		$sql .= "`zip` LIKE '%$s_zip%'";
 		$and = 1;
 	}
-	if ($s_vendor) {
-		if ($and) $sql .= " AND ";
-		$sql .= "`vendor` LIKE '%$s_vendor%'";
-		$and = 1;
-	}
+#	if ($s_vendor) {
+#		if ($and) $sql .= " AND ";
+#		$sql .= "`vendor` LIKE '%$s_vendor%'";
+#		$and = 1;
+#	}
 }
 
 # just sort it by name - he wants a CSV anyways

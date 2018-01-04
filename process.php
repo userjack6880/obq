@@ -303,7 +303,7 @@ function ult_loc($loc,$mysql) {
 
 				$phone = $doc->find('li','id=phone');
 				if ($phone) {
-					$phone = str_replace(array('(',')','-',' '), "", $phone);
+					$phone = str_replace(array('(',')','-','.',' '), "", $phone);
 					$ins_field .= ",`phone`";
 					$ins_data  .= ",'$phone'";
 					$ins_update .= ",`phone`='$phone'";
